@@ -34,5 +34,6 @@ export 'src/native_social_auth.dart'
         GoogleTokenProvider,
         GoogleTokens,
         NativeSocialAuth,
+        generateRawNonce,
         nativeAppleCredential;
 export 'src/sign_in_methods.dart' show SignInMethods, lookUpSignInMethods;

@@ -49,6 +49,12 @@ Future<void> _settle() =>
     Future<void>.delayed(const Duration(milliseconds: 20));
 
 void main() {
+  test('generateRawNonce is random, URL-safe and exported', () {
+    final a = generateRawNonce(), b = generateRawNonce();
+    expect(a, isNot(b));
+    expect(a, matches(RegExp(r'^[A-Za-z0-9_=-]{40,}$')));
+  });
+
   group('signInWithApple', () {
     test('sends the raw nonce whose SHA-256 Apple was given', () async {
       final fake = FakeSupabase(_happyServer);

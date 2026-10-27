@@ -21,9 +21,21 @@ class SignInMethods {
   /// The other identities, e.g. `['google', 'apple']`.
   final List<String> providers;
 
-  /// The first social provider, for "This account uses Google to sign in."
-  String? get socialProvider =>
-      providers.where((p) => p != 'email' && p != 'phone').firstOrNull;
+  /// A reset email only helps an account that exists and has a password.
+  bool get canResetPassword => accountExists && hasPassword;
+
+  /// The social provider to steer the user toward when there's no password,
+  /// for "This account uses Google to sign in." Prefers Apple and Google, then
+  /// any other provider that isn't email or phone.
+  String? get socialProvider {
+    for (final preferred in const ['apple', 'google']) {
+      if (providers.contains(preferred)) return preferred;
+    }
+    for (final provider in providers) {
+      if (provider != 'email' && provider != 'phone') return provider;
+    }
+    return null;
+  }
 
   factory SignInMethods.fromRow(Map<String, dynamic> row) => SignInMethods(
         accountExists: row['account_exists'] == true,
@@ -40,6 +52,7 @@ class SignInMethods {
 
 /// Looks up how [email] signs in. Returns null on any failure, so the caller
 /// fails open and sends the reset anyway rather than blocking a real one.
+/// [onError] receives that failure, for your logs.
 ///
 /// The function answers "does this email have an account?" for anyone,
 /// signed in or not. That's the point, and also an account-enumeration
@@ -48,6 +61,7 @@ Future<SignInMethods?> lookUpSignInMethods(
   SupabaseClient client,
   String email, {
   String function = 'account_signin_methods',
+  void Function(Object error, StackTrace stackTrace)? onError,
 }) async {
   try {
     final result =
@@ -55,7 +69,8 @@ Future<SignInMethods?> lookUpSignInMethods(
     final row =
         result is List ? (result.isEmpty ? null : result.first) : result;
     return row is Map<String, dynamic> ? SignInMethods.fromRow(row) : null;
-  } catch (_) {
+  } catch (e, st) {
+    onError?.call(e, st);
     return null;
   }
 }

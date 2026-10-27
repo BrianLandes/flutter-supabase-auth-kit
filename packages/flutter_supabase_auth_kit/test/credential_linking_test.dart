@@ -130,7 +130,9 @@ void main() {
           await lookUpSignInMethods(fake.client, ' ada@example.com ');
       expect(methods?.accountExists, isTrue);
       expect(methods?.hasPassword, isFalse);
-      expect(methods?.socialProvider, 'google');
+      expect(methods?.socialProvider, 'apple',
+          reason: 'Apple and Google are preferred, Apple first');
+      expect(methods?.canResetPassword, isFalse);
       final call = fake.requests.single;
       expect(call.url.path, '/rest/v1/rpc/account_signin_methods');
       expect(fake.bodyOf(call), {'p_email': 'ada@example.com'});
@@ -140,7 +142,22 @@ void main() {
         () async {
       final fake = FakeSupabase((r) async =>
           http.Response('{"message":"permission denied","code":"42501"}', 401));
-      expect(await lookUpSignInMethods(fake.client, 'ada@example.com'), isNull);
+      final errors = <Object>[];
+      expect(
+          await lookUpSignInMethods(fake.client, 'ada@example.com',
+              onError: (e, _) => errors.add(e)),
+          isNull);
+      expect(errors, hasLength(1), reason: 'the failure still reaches logs');
+    });
+
+    test('steers to any social provider when there is no Apple or Google', () {
+      final m = SignInMethods.fromRow({
+        'account_exists': true,
+        'has_password': true,
+        'providers': ['email', 'phone', 'github'],
+      });
+      expect(m.socialProvider, 'github');
+      expect(m.canResetPassword, isTrue);
     });
 
     test('an unknown address', () {
