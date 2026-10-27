@@ -1,0 +1,17 @@
+name: flutter_supabase_auth_kit_example
+description: Sign in with Apple and Google through flutter_supabase_auth_kit.
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_supabase_auth_kit:
+    path: ../
+  google_sign_in: ^7.0.0
+  supabase_flutter: ^2.9.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

@@ -1,0 +1,30 @@
+{
+  "//lock": [
+    "Off on purpose. Recent Deno writes lockfile v5, and the Deno inside the",
+    "`supabase functions deploy` bundler has read at most v4, so a deno.lock",
+    "next to this file can fail every deploy with \"Unsupported lockfile",
+    "version\". Every remote import is pinned to an exact version in source",
+    "instead."
+  ],
+  "lock": false,
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "//lint": [
+    "no-import-prefix is excluded because inline jsr:/npm: specifiers are the",
+    "Supabase edge-function convention (each function is bundled on its own).",
+    "Keep every specifier pinned to an exact version."
+  ],
+  "lint": {
+    "rules": {
+      "exclude": ["no-import-prefix"]
+    }
+  },
+  "tasks": {
+    "test": "deno test --allow-env --allow-net",
+    "test:integration": "RUN_INTEGRATION=true deno test --allow-env --allow-net _tests/",
+    "check": "deno check _shared/ _tests/ apple-token-exchange/ revoke-apple-tokens/",
+    "lint": "deno lint"
+  }
+}

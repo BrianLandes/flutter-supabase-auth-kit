@@ -1,0 +1,28 @@
+name: flutter_supabase_auth_kit
+description: >-
+  Native Google and Apple sign-in, credential linking and auth error handling
+  for Flutter apps on Supabase, with the fixes production found: Apple's
+  missing nonce claim, duplicate accounts from unlinked phones and emails, and
+  Apple token revocation on account deletion.
+version: 0.1.0
+homepage: https://github.com/BrianLandes/flutter-supabase-auth-kit
+repository: https://github.com/BrianLandes/flutter-supabase-auth-kit/tree/main/packages/flutter_supabase_auth_kit
+issue_tracker: https://github.com/BrianLandes/flutter-supabase-auth-kit/issues
+topics: [supabase, auth, sign-in-with-apple, google-sign-in, authentication]
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  crypto: ^3.0.3
+  sign_in_with_apple: ">=6.1.0 <9.0.0"
+  supabase: ^2.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  http: ^1.2.0

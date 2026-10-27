@@ -1,0 +1,89 @@
+name: Server
+
+# The Supabase side of the kit: edge functions (Deno) and migrations.
+# GitHub-hosted runners only. This is a public repo, so it must never run on
+# self-hosted machines (a fork PR would execute arbitrary code on them).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - 'scripts/test-integration.sh'
+      - '.github/workflows/server.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - 'scripts/test-integration.sh'
+      - '.github/workflows/server.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SUPABASE_CLI_VERSION: 2.117.0
+  DENO_VERSION: v2.9.7
+
+jobs:
+  functions:
+    name: Edge functions (unit, lint, check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: supabase/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+      - name: Lint
+        run: deno lint
+      - name: Type-check
+        run: deno task check
+      - name: Unit tests
+        # The integration tests in _tests/ are skipped without RUN_INTEGRATION.
+        run: deno test --allow-env --allow-net
+
+  integration:
+    name: Integration (local stack) + security posture
+    runs-on: ubuntu-latest
+    needs: functions
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Start Supabase (Postgres, Auth, PostgREST, Kong only)
+        # Applies supabase/migrations on start.
+        run: >-
+          supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Integration tests
+        env:
+          SUPABASE_CLI: supabase
+        run: scripts/test-integration.sh
+
+      - name: Security posture
+        run: >-
+          npx -y supabase-security-posture@0.1.0 check
+          --config supabase/security-posture.yaml
+          --db-url postgresql://postgres:postgres@127.0.0.1:54722/postgres
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup

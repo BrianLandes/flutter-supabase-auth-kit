@@ -1,0 +1,30 @@
+# supabase-security-posture config: what each table and client-callable
+# SECURITY DEFINER function in this kit is MEANT to be. CI checks the live
+# database against it (.github/workflows/server.yml):
+#
+#   npx -y supabase-security-posture@0.1.0 check \
+#     --config supabase/security-posture.yaml \
+#     --db-url postgresql://postgres:postgres@127.0.0.1:54722/postgres
+#
+# If you copy the kit's migrations into your own project, merge these entries
+# into your own config.
+schemas: [public]
+
+tables:
+  apple_refresh_tokens:
+    kind: internal
+    reason: >-
+      Sign in with Apple refresh tokens are credentials. Only the
+      apple-token-exchange and revoke-apple-tokens edge functions touch them,
+      as service_role. RLS on, no policies, every client grant revoked.
+
+functions:
+  account_signin_methods:
+    scope: pre-login
+    reason: >-
+      The forgot-password screen runs signed out, so anon must call it. It is
+      an account-existence oracle by design and returns only three fields;
+      rate-limit or captcha it before a public launch.
+  # apple_token_revocation_due is deliberately absent: it is granted to
+  # service_role only, so no client role can call it and the tool does not
+  # list it. If it ever shows up as unclassified, its grants have regressed.

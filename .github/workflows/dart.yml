@@ -1,0 +1,41 @@
+name: Dart package
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# GitHub-hosted on purpose: this repo is public, and a public repo must never
+# run on a self-hosted runner (fork PRs would run arbitrary code on it).
+
+jobs:
+  package:
+    name: flutter_supabase_auth_kit (${{ matrix.deps }} deps)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Lowest catches a lower bound that no longer compiles or lacks an API
+        # the kit calls (linkIdentityWithIdToken arrived in gotrue 2.15).
+        deps: [highest, lowest]
+    defaults:
+      run:
+        working-directory: packages/flutter_supabase_auth_kit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: if [ "${{ matrix.deps }}" = lowest ]; then flutter pub downgrade; else flutter pub get; fi
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze lib test
+      - run: flutter test
+      - name: Example (compiles the google_sign_in 7 provider)
+        if: matrix.deps == 'highest'
+        working-directory: packages/flutter_supabase_auth_kit/example
+        run: flutter pub get && flutter analyze
+      - name: Publish dry run
+        if: matrix.deps == 'highest'
+        run: |
+          git diff --stat
+          git checkout -- .
+          flutter pub publish --dry-run
